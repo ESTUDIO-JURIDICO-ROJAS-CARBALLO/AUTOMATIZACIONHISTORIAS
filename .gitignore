@@ -1,0 +1,9 @@
+.env
+session.json
+__pycache__/
+*.png
+!justicia.png
+temp_story.html
+venv/
+.pytest_cache/
+.vscode/

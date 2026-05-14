@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=Inter:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #1a1a2e;
+      font-family: 'Montserrat', sans-serif;
+      width: 1080px;
+      height: 1920px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .story {
+      width: 1080px;
+      height: 1920px;
+      background: #F0F0F0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* === IMAGEN DE FONDO: SÍMBOLO DE JUSTICIA === */
+    .justice-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      z-index: 0;
+      opacity: 0.18; /* Sutil como watermark de fondo */
+    }
+
+    /* Overlay degradado para que el texto sea legible */
+    .story::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(240,240,240,0.75) 0%,
+        rgba(240,240,240,0.55) 40%,
+        rgba(240,240,240,0.85) 70%,
+        rgba(240,240,240,0.98) 100%
+      );
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Detalles decorativos magenta */
+    .story::after {
+      content: '';
+      position: absolute;
+      bottom: 200px;
+      left: -300px;
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(229, 0, 127, 0.07) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .story-topbar {
+      padding: 50px 70px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+      position: relative;
+    }
+
+    .topbar-label {
+      color: #E5007F;
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Caja destacada del símbolo de justicia */
+    .justice-featured {
+      position: relative;
+      z-index: 10;
+      margin: 10px 70px 30px;
+      border-radius: 24px;
+      overflow: hidden;
+      height: 560px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.25), 0 0 0 4px #E5007F;
+    }
+
+    .justice-featured img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center center;
+      background: #14141f;
+    }
+
+    /* Badge encima de la imagen */
+    .justice-featured-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(0deg, rgba(157,0,86,0.88) 0%, transparent 100%);
+      padding: 30px 30px 25px;
+    }
+
+    .justice-featured-overlay .badge-text {
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .story-body {
+      padding: 0px 70px 20px;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      position: relative;
+    }
+
+    .story-badge {
+      background: #9D0056;
+      color: #FFFFFF;
+      font-size: 1.5rem;
+      font-weight: 700;
+      padding: 10px 28px;
+      border-radius: 50px;
+      margin-bottom: 20px;
+      width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .story-title {
+      color: #9D0056;
+      font-size: 3.4rem;
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    .story-title span {
+      color: #E5007F;
+    }
+
+    .story-text {
+      color: #3B1C2A;
+      font-family: 'Inter', sans-serif;
+      font-size: 2.1rem;
+      font-weight: 500;
+      line-height: 1.55;
+      border-left: 6px solid #9D0056;
+      padding-left: 28px;
+      margin-bottom: 20px;
+    }
+
+    .story-source {
+      background: #FFFFFF;
+      padding: 22px 35px;
+      border-radius: 16px;
+      border: 2px solid #D1D5DB;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .source-label {
+      color: #9CA3AF;
+      font-size: 1.3rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .source-name {
+      color: #1F2937;
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .source-link {
+      color: #9D0056;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .story-footer {
+      background: transparent;
+      padding: 15px 70px 65px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      position: relative;
+    }
+
+    .footer-logo-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #FFFFFF;
+      padding: 22px 55px;
+      border-radius: 28px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+      border: 5px solid #9D0056;
+    }
+
+    .footer-logo-container img {
+      height: 200px;
+      width: auto;
+      max-width: 800px;
+      object-fit: contain;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="story" id="capture">
+    <!-- Imagen de justicia como fondo sutil -->
+    <img src="{{IMAGE}}" alt="Símbolo de Justicia" class="justice-bg" />
+
+    <div class="story-topbar">
+      <span class="topbar-label">⚖️ CÓRDOBA LEGAL</span>
+    </div>
+
+    <!-- Imagen de justicia prominente en la parte superior -->
+    <div class="justice-featured">
+      <img src="{{IMAGE}}" alt="Símbolo de Justicia" />
+      <div class="justice-featured-overlay">
+        <span class="badge-text">⚖️ NOTICIA DESTACADA</span>
+      </div>
+    </div>
+
+    <div class="story-body">
+      <div class="story-title">{{TITLE}}</div>
+
+      <p class="story-text">{{SUBTITLE}}</p>
+
+      <div class="story-source">
+        <span class="source-label">Fuente de la información</span>
+        <span class="source-name">{{SOURCE}}</span>
+        <span class="source-link">{{LINK}}</span>
+      </div>
+    </div>
+
+    <div class="story-footer">
+      <div class="footer-logo-container">
+        <!-- El logo adjunto se insertará aquí -->
+        <img src="data:image/jpeg;base64,{{LOGO_B64}}" alt="Rojas & Carballo Logo">
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Bot Instagram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">⚖️</div>
+            <h1>Rojas & Carballo - Bot de Historias</h1>
+        </header>
+
+        <main class="dashboard">
+            <section class="control-panel">
+                <div class="card status-card">
+                    <h2>Estado del Bot</h2>
+                    <div class="status-indicator">
+                        <span id="status-dot" class="dot {{ 'active' if is_running else 'inactive' }}"></span>
+                        <span id="status-text">{{ 'Ejecutándose' if is_running else 'Detenido' }}</span>
+                    </div>
+                    
+                    <div class="schedule-control">
+                        <label for="publish-time">Hora de publicación automática:</label>
+                        <input type="time" id="publish-time" value="{{ auto_time }}">
+                    </div>
+
+                    <div class="actions">
+                        <button id="btn-start" class="btn btn-primary" onclick="startBot()">Iniciar Automático</button>
+                        <button id="btn-stop" class="btn btn-secondary" onclick="stopBot()">Detener</button>
+                    </div>
+                </div>
+
+                <div class="card manual-card">
+                    <h2>Publicación Manual</h2>
+                    <p>Fuerza al bot a buscar una noticia ahora mismo y publicarla en la historia.</p>
+                    <button id="btn-force" class="btn btn-accent" onclick="forcePublish()">Publicar Noticia Ahora</button>
+                </div>
+
+                <div class="card preview-card">
+                    <h2>Última Historia Generada</h2>
+                    <div class="preview-image-container">
+                        <img id="story-preview" src="/preview" alt="Vista previa de la historia" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%\' height=\'100%\'><rect width=\'100%\' height=\'100%\' fill=\'%23f3f4f6\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'Inter\' font-size=\'14\' fill=\'%239ca3af\'>No hay historias generadas aún</text></svg>'">
+                    </div>
+                    <button class="btn btn-outline" onclick="document.getElementById('story-preview').src='/preview?' + new Date().getTime()">Actualizar Vista Previa</button>
+                </div>
+            </section>
+
+            <section class="logs-panel">
+                <div class="card logs-card">
+                    <h2>Registro de Actividad</h2>
+                    <div class="logs-container" id="logs-container">
+                        {% for log in logs %}
+                            <div class="log-entry">{{ log }}</div>
+                        {% endfor %}
+                        {% if not logs %}
+                            <div class="log-entry empty">No hay actividad reciente.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        function updateStatus() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const dot = document.getElementById('status-dot');
+                    const text = document.getElementById('status-text');
+                    
+                    if (data.is_running) {
+                        dot.className = 'dot active';
+                        text.textContent = 'Ejecutándose';
+                    } else {
+                        dot.className = 'dot inactive';
+                        text.textContent = 'Detenido';
+                    }
+
+                    const logsContainer = document.getElementById('logs-container');
+                    logsContainer.innerHTML = '';
+                    if (data.logs.length === 0) {
+                        logsContainer.innerHTML = '<div class="log-entry empty">No hay actividad reciente.</div>';
+                    } else {
+                        data.logs.forEach(log => {
+                            const div = document.createElement('div');
+                            div.className = 'log-entry';
+                            div.textContent = log;
+                            logsContainer.appendChild(div);
+                        });
+                    }
+                });
+        }
+
+        function startBot() {
+            const time = document.getElementById('publish-time').value;
+            fetch('/api/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ time: time })
+            }).then(() => updateStatus());
+        }
+
+        function stopBot() {
+            fetch('/api/stop', { method: 'POST' })
+                .then(() => updateStatus());
+        }
+
+        function forcePublish() {
+            const btn = document.getElementById('btn-force');
+            btn.disabled = true;
+            btn.textContent = 'Iniciando...';
+            fetch('/api/force_publish', { method: 'POST' })
+                .then(() => {
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = 'Publicar Noticia Ahora';
+                        updateStatus();
+                    }, 3000);
+                });
+        }
+
+        // Actualizar el estado cada 5 segundos
+        setInterval(updateStatus, 5000);
+    </script>
+</body>
+</html>
