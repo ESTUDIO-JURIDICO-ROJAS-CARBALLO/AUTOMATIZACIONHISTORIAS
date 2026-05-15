@@ -1,0 +1,17 @@
+.git
+.github
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+venv
+session.json
+story_*.png
+historia_*.png
+plan_post_*.png
+diagnostic_bot.py
+debug_session.py
+PRUEBA
+Nueva carpeta

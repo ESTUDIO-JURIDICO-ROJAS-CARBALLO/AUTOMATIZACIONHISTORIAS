@@ -32,11 +32,11 @@ def ejecutar_bot():
         if noticia:
             add_log(f"Noticia encontrada: {noticia['titulo']}")
             add_log("Generando diseño de historia en PNG...")
-            crear_imagen_historia(noticia)
+            img_path = crear_imagen_historia(noticia)
             add_log("Imagen generada correctamente.")
             
             add_log("Publicando en Instagram...")
-            publicar_en_instagram(noticia)
+            publicar_en_instagram(noticia, img_path)
             add_log("¡Proceso finalizado con éxito! Historia publicada.")
             return True, "Historia publicada con éxito."
         else:
@@ -105,4 +105,5 @@ def preview():
 
 if __name__ == '__main__':
     add_log("Servidor iniciado. Esperando instrucciones...")
-    app.run(debug=True, port=5000)
+    port = int(os.getenv('PORT', 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)

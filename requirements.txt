@@ -6,3 +6,6 @@ html2image
 instagrapi
 Pillow
 flask
+gunicorn
+pytz
+apscheduler

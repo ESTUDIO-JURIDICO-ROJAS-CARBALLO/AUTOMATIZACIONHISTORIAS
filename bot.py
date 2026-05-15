@@ -261,20 +261,29 @@ def obtener_metadatos_url(url):
 def obtener_noticia_cordoba():
     print("Buscando noticias estrictamente legales en Google News...")
     # Búsqueda de jurisprudencia y actualidad legal en Córdoba
-    query = '%28%22fallo+judicial%22+OR+%22sentencia%22+OR+%22justicia%22+OR+%22tribunal%22+OR+%22juez%22%29+%22C%C3%B3rdoba%22+Argentina'
+    query = '%28fallo+OR+sentencia+OR+justicia+OR+juez+OR+tribunal+OR+denuncia+OR+demanda%29+C%C3%B3rdoba+Argentina'
     url = f"https://news.google.com/rss/search?q={query}+when:7d&hl=es-419&gl=AR"
     feed = feedparser.parse(url)
     
     if not feed.entries:
-        print("No se encontraron noticias recientes.")
+        print("No se encontraron noticias recientes en el RSS de Google News.")
         return None
+    
+    print(f"Se encontraron {len(feed.entries)} noticias potenciales. Filtrando...")
     
     # Buscamos la primera noticia válida
     noticia_valida = None
     titulo_limpio = ""
     fuente = ""
     
-    palabras_legales = ['fallo', 'juez', 'sentencia', 'fiscal', 'corte', 'tribunal', 'justicia', 'legal', 'abogado', 'condena', 'prisión', 'amparo', 'demanda', 'juzgado']
+    palabras_legales = [
+        'fallo', 'juez', 'sentencia', 'fiscal', 'corte', 'tribunal', 'justicia', 
+        'legal', 'abogado', 'condena', 'prisión', 'amparo', 'demanda', 'juzgado',
+        'ley', 'derecho', 'juicio', 'litigio', 'penal', 'civil', 'laboral', 'familia',
+        'sucesión', 'indemnización', 'recurso', 'apelación', 'suprema'
+    ]
+    
+    fuentes_cordoba = ['la voz', 'lavoz', 'cba24n', 'el doce', 'eldoce', 'cadena 3', 'comercio y justicia', 'hoy dia cordoba', 'puntal']
     
     for entrada in feed.entries:
         titulo_completo = entrada.title
@@ -289,18 +298,24 @@ def obtener_noticia_cordoba():
             f_fuente = "Diario Local"
             
         # Filtros para descartar noticias basura
-        if "Estamos más Cerca" in t_limpio or "Estamos m" in t_limpio:
+        if any(x in t_limpio for x in ["Estamos más Cerca", "Estamos m", "Suscribite"]):
             continue
             
-        if len(t_limpio.split()) < 4: 
+        if len(t_limpio.split()) < 3: 
             continue
             
-        # Validación estricta: debe contener términos legales explícitos y referirse a Córdoba
+        # Validación: debe contener términos legales o ser de una fuente jurídica
         texto_validar = (t_limpio + " " + (entrada.get('description', '') or '')).lower()
-        if not any(palabra in texto_validar for palabra in palabras_legales):
+        es_legal = any(palabra in texto_validar for palabra in palabras_legales) or "justicia" in f_fuente.lower()
+        
+        if not es_legal:
             continue
             
-        if "córdoba" not in texto_validar and "cordoba" not in texto_validar:
+        # Validación de ubicación: debe mencionar Córdoba o ser de una fuente local conocida
+        menciona_cordoba = any(x in texto_validar for x in ["córdoba", "cordoba", "villa maría", "rio cuarto", "carlos paz"])
+        es_fuente_local = any(fuente.lower() in f_fuente.lower() for fuente in fuentes_cordoba)
+        
+        if not (menciona_cordoba or es_fuente_local):
             continue
             
         noticia_valida = entrada
@@ -387,12 +402,31 @@ def crear_imagen_historia(noticia):
     hti.browser.flags = ['--headless', '--disable-gpu', '--hide-scrollbars']
     
     # Usar un nombre único para evitar problemas de caché
-    filename = f'story_{int(time.time())}.png'
+    timestamp = int(time.time())
+    filename = f'story_{timestamp}.png'
+    
+    print(f"Renderizando HTML a {filename}...")
     hti.screenshot(html_file=temp_html_path, save_as=filename)
     
     final_path = os.path.join(base_dir, filename)
-    print(f"Imagen {final_path} generada con éxito.")
-    return final_path
+    
+    # Verificar si se creó la imagen
+    if not os.path.exists(final_path):
+        print(f"ERROR: No se pudo generar la imagen {filename}")
+        # Intentar una vez más sin flags de browser por si acaso
+        print("Reintentando sin flags adicionales...")
+        hti.browser.flags = ['--headless']
+        hti.screenshot(html_file=temp_html_path, save_as=filename)
+        
+    if os.path.exists(final_path):
+        # Guardar una copia como story_final.png para la vista previa
+        import shutil
+        story_final_path = os.path.join(base_dir, 'story_final.png')
+        shutil.copy(final_path, story_final_path)
+        print(f"Imagen {final_path} generada con éxito.")
+        return final_path
+    else:
+        raise Exception("Error crítico: Html2Image no pudo generar el archivo PNG. Revisa si Chrome/Edge está instalado.")
 
 def publicar_en_instagram(noticia, image_path):
     if PASSWORD == "tu_contraseña_aqui":
