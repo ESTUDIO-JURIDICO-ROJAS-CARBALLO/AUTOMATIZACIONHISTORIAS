@@ -398,8 +398,16 @@ def crear_imagen_historia(noticia):
         
     # Convertimos a imagen
     hti = Html2Image(size=(1080, 1920), output_path=base_dir)
-    # Especificamos flags para no abrir el browser de forma visible y evitar errores en Docker
-    hti.browser.flags = ['--headless', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--disable-dev-shm-usage']
+    # Especificamos flags para no abrir el browser de forma visible y evitar errores en Docker/Render
+    hti.browser.flags = [
+        '--headless', 
+        '--no-sandbox', 
+        '--disable-gpu', 
+        '--hide-scrollbars', 
+        '--disable-dev-shm-usage',
+        '--disable-software-rasterizer',
+        '--remote-debugging-port=9222'
+    ]
     
     # Usar un nombre único para evitar problemas de caché
     timestamp = int(time.time())
@@ -424,9 +432,15 @@ def crear_imagen_historia(noticia):
         story_final_path = os.path.join(base_dir, 'story_final.png')
         shutil.copy(final_path, story_final_path)
         print(f"Imagen {final_path} generada con éxito.")
+        
+        # Intentar liberar memoria explícitamente
+        del hti
+        
         return final_path
     else:
-        raise Exception("Error crítico: Html2Image no pudo generar el archivo PNG. Revisa si Chrome/Edge está instalado.")
+        # Intentar liberar memoria incluso si falla
+        del hti
+        raise Exception("Error crítico: Html2Image no pudo generar el archivo PNG.")
 
 def publicar_en_instagram(noticia, image_path):
     if PASSWORD == "tu_contraseña_aqui":
