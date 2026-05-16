@@ -398,8 +398,8 @@ def crear_imagen_historia(noticia):
         
     # Convertimos a imagen
     hti = Html2Image(size=(1080, 1920), output_path=base_dir)
-    # Especificamos flag para no abrir el browser de forma visible
-    hti.browser.flags = ['--headless', '--disable-gpu', '--hide-scrollbars']
+    # Especificamos flags para no abrir el browser de forma visible y evitar errores en Docker
+    hti.browser.flags = ['--headless', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--disable-dev-shm-usage']
     
     # Usar un nombre único para evitar problemas de caché
     timestamp = int(time.time())

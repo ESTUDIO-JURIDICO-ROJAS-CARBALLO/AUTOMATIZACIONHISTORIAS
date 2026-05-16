@@ -1,11 +1,11 @@
 FROM python:3.12-slim
 
-# Instalar dependencias del sistema y Chrome para html2image
+# Instalar dependencias del sistema y Chrome
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
-    unzip \
     curl \
+    unzip \
     libnss3 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
@@ -19,26 +19,30 @@ RUN apt-get update && apt-get install -y \
     libpangocairo-1.0-0 \
     libxshmfence1 \
     fonts-liberation \
-    libappindicator3-1 \
-    lsb-release \
-    xdg-utils \
-    google-chrome-stable || \
-    (wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' && \
-    apt-get update && apt-get install -y google-chrome-stable)
+    libgtk-3-0 \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Configurar el directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de requerimientos e instalar dependencias
+# Copiar archivos e instalar dependencias de Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar el resto del código
 COPY . .
 
-# Exponer el puerto que usa Flask
+# Exponer el puerto
 EXPOSE 5000
 
-# Comando para ejecutar la aplicación con gunicorn
+# Variables de entorno para Chrome
+ENV CHROME_BIN=/usr/bin/google-chrome-stable
+ENV DISPLAY=:99
+
+# Comando para ejecutar con gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
