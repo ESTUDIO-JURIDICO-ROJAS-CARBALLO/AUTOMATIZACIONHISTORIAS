@@ -44,5 +44,5 @@ EXPOSE 5000
 ENV CHROME_BIN=/usr/bin/google-chrome-stable
 ENV DISPLAY=:99
 
-# Comando para ejecutar con gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+# Comando para ejecutar con gunicorn (limitado a 1 worker para ahorrar RAM)
+CMD ["gunicorn", "--workers", "1", "--threads", "2", "--bind", "0.0.0.0:5000", "app:app"]

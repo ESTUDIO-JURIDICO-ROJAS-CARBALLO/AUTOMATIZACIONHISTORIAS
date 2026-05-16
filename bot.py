@@ -435,6 +435,12 @@ def crear_imagen_historia(noticia):
         
         # Intentar liberar memoria explícitamente
         del hti
+        import gc
+        gc.collect()
+        
+        # Pequeña pausa para que el sistema respire antes de Instagram
+        print("Esperando 5 segundos para estabilizar memoria...")
+        time.sleep(5)
         
         return final_path
     else:
