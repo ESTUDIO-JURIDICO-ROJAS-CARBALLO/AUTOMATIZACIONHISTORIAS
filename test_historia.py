@@ -29,5 +29,5 @@ print(f"  -> Imagen cargada: {imagen_b64[:60]}...")
 
 print("\nPaso 2: Generando imagen de historia...")
 img_path = bot.crear_imagen_historia(noticia_test)
-print(f"\n✓ Historia generada exitosamente en:\n  {img_path}")
-print(f"  Tamaño: {os.path.getsize(img_path) / 1024:.1f} KB")
+print(f"\n[OK] Historia generada exitosamente en:\n  {img_path}")
+print(f"  Tamano: {os.path.getsize(img_path) / 1024:.1f} KB")

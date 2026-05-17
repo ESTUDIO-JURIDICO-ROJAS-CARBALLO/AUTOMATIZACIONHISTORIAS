@@ -7,3 +7,4 @@ temp_story.html
 venv/
 .pytest_cache/
 .vscode/
+*.ttf

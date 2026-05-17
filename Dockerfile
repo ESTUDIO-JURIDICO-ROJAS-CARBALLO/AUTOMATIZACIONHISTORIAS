@@ -1,29 +1,9 @@
 FROM python:3.12-slim
 
-# Instalar dependencias del sistema y Chrome
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
+# Instalar dependencias esenciales del sistema si se requieren
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    unzip \
-    libnss3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    libpangocairo-1.0-0 \
-    libxshmfence1 \
-    fonts-liberation \
-    libgtk-3-0 \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
+    ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -40,9 +20,5 @@ COPY . .
 # Exponer el puerto
 EXPOSE 5000
 
-# Variables de entorno para Chrome
-ENV CHROME_BIN=/usr/bin/google-chrome-stable
-ENV DISPLAY=:99
-
-# Comando para ejecutar con gunicorn (limitado a 1 worker para ahorrar RAM)
+# Comando para ejecutar con gunicorn (1 worker para ahorrar RAM)
 CMD ["gunicorn", "--workers", "1", "--threads", "2", "--bind", "0.0.0.0:5000", "app:app"]

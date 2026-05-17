@@ -2,7 +2,6 @@ feedparser
 requests
 beautifulsoup4
 python-dotenv
-html2image
 instagrapi
 Pillow
 flask

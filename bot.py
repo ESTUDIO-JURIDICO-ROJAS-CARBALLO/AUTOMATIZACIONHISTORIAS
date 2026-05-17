@@ -5,7 +5,6 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from dotenv import load_dotenv
-from html2image import Html2Image
 from instagrapi import Client
 from instagrapi.types import StoryLink
 import base64
@@ -350,103 +349,212 @@ def obtener_noticia_cordoba():
         "imagen": imagen_b64
     }
 
-def crear_imagen_historia(noticia):
-    # Rutas relativas al script
+def descargar_fuentes():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    template_path = os.path.join(base_dir, 'story_template.html')
-    logo_path = os.path.join(base_dir, 'logo.jpg')
-    temp_html_path = os.path.join(base_dir, 'temp_story.html')
-    final_img_path = os.path.join(base_dir, 'story_final.png')
-
-    print("Generando diseño de historia en PNG...")
-    with open(template_path, 'r', encoding='utf-8') as f:
-        html_content = f.read()
-        
-    # Leer el logo en base64
-    logo_b64 = ""
-    if os.path.exists(logo_path):
-        with open(logo_path, 'rb') as img_file:
-            logo_b64 = base64.b64encode(img_file.read()).decode('utf-8')
+    font_montserrat_bold = os.path.join(base_dir, 'Montserrat-Bold.ttf')
+    font_montserrat_medium = os.path.join(base_dir, 'Montserrat-Medium.ttf')
+    
+    if not os.path.exists(font_montserrat_bold):
+        try:
+            url = "https://raw.githubusercontent.com/JulietaUla/Montserrat/master/fonts/ttf/Montserrat-Bold.ttf"
+            print(f"Descargando Montserrat-Bold.ttf desde {url}...")
+            r = requests.get(url, timeout=20)
+            if r.status_code == 200:
+                with open(font_montserrat_bold, 'wb') as f:
+                    f.write(r.content)
+                print("Montserrat-Bold guardado con exito.")
+        except Exception as e:
+            print(f"Error descargando Montserrat-Bold: {e}")
             
-    # Extraemos máximo 80 caracteres y lo ponemos remarcado
-    titulo_corto = noticia['titulo'][:80] + ("..." if len(noticia['titulo']) > 80 else "")
+    if not os.path.exists(font_montserrat_medium):
+        try:
+            url = "https://raw.githubusercontent.com/JulietaUla/Montserrat/master/fonts/ttf/Montserrat-Medium.ttf"
+            print(f"Descargando Montserrat-Medium.ttf desde {url}...")
+            r = requests.get(url, timeout=20)
+            if r.status_code == 200:
+                with open(font_montserrat_medium, 'wb') as f:
+                    f.write(r.content)
+                print("Montserrat-Medium guardado con exito.")
+        except Exception as e:
+            print(f"Error descargando Montserrat-Medium: {e}")
 
-    # Separar en dos para destacar la primera parte
-    palabras = titulo_corto.split()
-    mitad = len(palabras) // 2
-    tit_destacado = " ".join(palabras[:mitad])
-    tit_resto = " ".join(palabras[mitad:])
+def quitar_emojis(texto):
+    """Elimina emojis y caracteres especiales no soportados por fuentes estándar."""
+    import re
+    # Dejar solo caracteres latinos imprimibles y puntuación básica
+    clean_text = re.sub(r'[^\w\s\d.,!?;:()""\'\'\-áéíóúÁÉÍÓÚñÑüÜ|]', '', texto)
+    return re.sub(r'\s+', ' ', clean_text).strip()
 
-    html_tit = f"<span>{tit_destacado}</span><br>{tit_resto}"
+def wrap_text(text, font, max_width, draw):
+    words = text.split(' ')
+    lines = []
+    current_line = []
+    for word in words:
+        test_line = ' '.join(current_line + [word])
+        bbox = draw.textbbox((0, 0), test_line, font=font)
+        width = bbox[2] - bbox[0]
+        if width <= max_width:
+            current_line.append(word)
+        else:
+            if current_line:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+            else:
+                lines.append(word)
+                current_line = []
+    if current_line:
+        lines.append(' '.join(current_line))
+    return lines
 
-    # La imagen del símbolo de justicia viene ya en base64 desde la noticia
-    imagen_src = noticia.get('imagen', '')
-    # Si por alguna razón no viene, la cargamos ahora
-    if not imagen_src:
-        imagen_src = obtener_imagen_justicia_b64()
-
-    html_content = html_content.replace('{{TITLE}}', html_tit)
-    html_content = html_content.replace('{{SUBTITLE}}', noticia['subtitulo'])
-    html_content = html_content.replace('{{SOURCE}}', noticia['fuente'].upper())
-    html_content = html_content.replace('{{LINK}}', noticia['dominio'])
-    html_content = html_content.replace('{{IMAGE}}', imagen_src)
-    html_content = html_content.replace('{{LOGO_B64}}', logo_b64)
+def crear_imagen_historia(noticia):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(base_dir, 'logo.jpg')
+    justicia_img_path = os.path.join(base_dir, 'justicia.png')
     
-    # Guardamos HTML temporal
-    with open(temp_html_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
+    # Asegurar que existan las fuentes
+    descargar_fuentes()
+    
+    # Cargar fuentes
+    font_m_bold = os.path.join(base_dir, 'Montserrat-Bold.ttf')
+    font_m_medium = os.path.join(base_dir, 'Montserrat-Medium.ttf')
+    
+    if os.path.exists(font_m_bold):
+        font_topbar = ImageFont.truetype(font_m_bold, 36)
+        font_montserrat_badge = ImageFont.truetype(font_m_bold, 32)
+        font_montserrat_title = ImageFont.truetype(font_m_bold, 54)
+        font_montserrat_source = ImageFont.truetype(font_m_bold, 32)
+    else:
+        font_topbar = ImageFont.load_default()
+        font_montserrat_badge = ImageFont.load_default()
+        font_montserrat_title = ImageFont.load_default()
+        font_montserrat_source = ImageFont.load_default()
         
-    # Convertimos a imagen
-    hti = Html2Image(size=(1080, 1920), output_path=base_dir)
-    # Especificamos flags para no abrir el browser de forma visible y evitar errores en Docker/Render
-    hti.browser.flags = [
-        '--headless', 
-        '--no-sandbox', 
-        '--disable-gpu', 
-        '--hide-scrollbars', 
-        '--disable-dev-shm-usage',
-        '--disable-software-rasterizer',
-        '--remote-debugging-port=9222'
-    ]
+    if os.path.exists(font_m_medium):
+        font_inter_sub = ImageFont.truetype(font_m_medium, 34)
+        font_inter_label = ImageFont.truetype(font_m_medium, 22)
+        font_inter_link = ImageFont.truetype(font_m_medium, 26)
+    else:
+        font_inter_sub = ImageFont.load_default()
+        font_inter_label = ImageFont.load_default()
+        font_inter_link = ImageFont.load_default()
+
+    # Limpiar textos
+    titulo_limpio = quitar_emojis(noticia['titulo'])
+    subtitulo_limpio = quitar_emojis(noticia['subtitulo'])
+    fuente_limpia = quitar_emojis(noticia['fuente'])
     
-    # Usar un nombre único para evitar problemas de caché
+    # 1. Crear Canvas (1080 x 1920)
+    bg = Image.new('RGBA', (1080, 1920), (240, 240, 240, 255))
+    draw = ImageDraw.Draw(bg)
+    
+    # 2. Agregar marca de agua sutil de fondo (balanza)
+    # Primero nos aseguramos de que justicia.png exista (si no, se autogenera)
+    if not os.path.exists(justicia_img_path):
+        generar_justicia_png(justicia_img_path)
+        
+    if os.path.exists(justicia_img_path):
+        try:
+            watermark = Image.open(justicia_img_path).convert('RGBA')
+            watermark.thumbnail((1080, 1920), Image.Resampling.LANCZOS)
+            watermark_full = Image.new('RGBA', (1080, 1920), (0, 0, 0, 0))
+            wx = (1080 - watermark.width) // 2
+            wy = (1920 - watermark.height) // 2
+            watermark_full.paste(watermark, (wx, wy))
+            
+            # Opacidad del 15%
+            r, g, b, a = watermark_full.split()
+            a = a.point(lambda p: int(p * 0.15))
+            watermark_full = Image.merge('RGBA', (r, g, b, a))
+            bg.alpha_composite(watermark_full)
+        except Exception as e:
+            print(f"Error cargando marca de agua de fondo: {e}")
+
+    # 3. Topbar "CORDOBA LEGAL"
+    draw.text((70, 50), "CORDOBA LEGAL", fill=(229, 0, 127, 255), font=font_topbar)
+    
+    # 4. Caja destacada (Featured Box)
+    draw.rounded_rectangle([70, 130, 1010, 690], radius=24, fill=(20, 20, 31, 255), outline=(229, 0, 127, 255), width=4)
+    
+    # Balanza centradísima
+    if os.path.exists(justicia_img_path):
+        try:
+            justicia_box = Image.open(justicia_img_path).convert('RGBA')
+            justicia_box.thumbnail((900, 480), Image.Resampling.LANCZOS)
+            jx = 70 + (940 - justicia_box.width) // 2
+            jy = 130 + (560 - justicia_box.height) // 2
+            bg.paste(justicia_box, (jx, jy), justicia_box)
+        except Exception as e:
+            print(f"Error pegando balanza destacada: {e}")
+            
+    # Overlay magenta al fondo de la caja
+    draw.rectangle([74, 610, 1006, 686], fill=(157, 0, 86, 220))
+    
+    # Texto "NOTICIA DESTACADA"
+    text_badge = "NOTICIA DESTACADA"
+    bbox = draw.textbbox((0, 0), text_badge, font=font_montserrat_badge)
+    tw = bbox[2] - bbox[0]
+    th = bbox[3] - bbox[1]
+    draw.text((70 + (940 - tw) // 2, 610 + (76 - th) // 2 - 4), text_badge, fill=(255, 255, 255, 255), font=font_montserrat_badge)
+
+    # 5. Título de la noticia
+    title_wrapped = wrap_text(titulo_limpio.upper(), font_montserrat_title, 940, draw)
+    y_curr = 740
+    for line in title_wrapped[:3]:
+        draw.text((70, y_curr), line, fill=(157, 0, 86, 255), font=font_montserrat_title)
+        y_curr += 68
+
+    # 6. Subtítulo (con barra vertical decorativa)
+    y_curr += 30
+    sub_wrapped = wrap_text(subtitulo_limpio, font_inter_sub, 880, draw)
+    y_sub_start = y_curr
+    for line in sub_wrapped[:4]:
+        draw.text((100, y_curr), line, fill=(59, 28, 42, 255), font=font_inter_sub)
+        y_curr += 48
+    y_sub_end = y_curr - 12
+    
+    # Línea vertical magenta gruesa
+    draw.line([(73, y_sub_start + 4), (73, y_sub_end)], fill=(157, 0, 86, 255), width=8)
+
+    # 7. Tarjeta de fuente
+    y_curr += 35
+    draw.rounded_rectangle([70, y_curr, 1010, y_curr + 180], radius=16, fill=(255, 255, 255, 255), outline=(209, 213, 219, 255), width=2)
+    draw.text((105, y_curr + 22), "FUENTE DE LA INFORMACION", fill=(156, 163, 175, 255), font=font_inter_label)
+    draw.text((105, y_curr + 58), fuente_limpia.upper(), fill=(31, 41, 55, 255), font=font_montserrat_source)
+    draw.text((105, y_curr + 108), noticia['dominio'], fill=(157, 0, 86, 255), font=font_inter_link)
+
+    # 8. Contenedor de Logo (Footer fijo abajo)
+    draw.rounded_rectangle([140, 1590, 940, 1830], radius=28, fill=(255, 255, 255, 255), outline=(157, 0, 86, 255), width=5)
+    
+    if os.path.exists(logo_path):
+        try:
+            logo = Image.open(logo_path).convert('RGBA')
+            logo.thumbnail((650, 180), Image.Resampling.LANCZOS)
+            lx = 140 + (800 - logo.width) // 2
+            ly = 1590 + (240 - logo.height) // 2
+            bg.paste(logo, (lx, ly), logo)
+        except Exception as e:
+            print(f"Error pegando logo: {e}")
+
+    # Guardar en nombres temporales y estables
     timestamp = int(time.time())
     filename = f'story_{timestamp}.png'
-    
-    print(f"Renderizando HTML a {filename}...")
-    hti.screenshot(html_file=temp_html_path, save_as=filename)
-    
     final_path = os.path.join(base_dir, filename)
     
-    # Verificar si se creó la imagen
-    if not os.path.exists(final_path):
-        print(f"ERROR: No se pudo generar la imagen {filename}")
-        # Intentar una vez más sin flags de browser por si acaso
-        print("Reintentando sin flags adicionales...")
-        hti.browser.flags = ['--headless']
-        hti.screenshot(html_file=temp_html_path, save_as=filename)
-        
-    if os.path.exists(final_path):
-        # Guardar una copia como story_final.png para la vista previa
-        import shutil
-        story_final_path = os.path.join(base_dir, 'story_final.png')
-        shutil.copy(final_path, story_final_path)
-        print(f"Imagen {final_path} generada con éxito.")
-        
-        # Intentar liberar memoria explícitamente
-        del hti
-        import gc
-        gc.collect()
-        
-        # Pequeña pausa para que el sistema respire antes de Instagram
-        print("Esperando 5 segundos para estabilizar memoria...")
-        time.sleep(5)
-        
-        return final_path
-    else:
-        # Intentar liberar memoria incluso si falla
-        del hti
-        raise Exception("Error crítico: Html2Image no pudo generar el archivo PNG.")
+    bg.convert('RGB').save(final_path, 'PNG', quality=95)
+    
+    # También guardar una copia como story_final.png para la vista previa
+    import shutil
+    story_final_path = os.path.join(base_dir, 'story_final.png')
+    shutil.copy(final_path, story_final_path)
+    
+    print(f"Imagen {final_path} generada con éxito con Pillow.")
+    
+    # Forzar recolección de basura
+    import gc
+    gc.collect()
+    
+    return final_path
+
 
 def publicar_en_instagram(noticia, image_path):
     if PASSWORD == "tu_contraseña_aqui":
