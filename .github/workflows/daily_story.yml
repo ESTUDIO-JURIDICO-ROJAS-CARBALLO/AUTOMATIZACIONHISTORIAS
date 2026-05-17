@@ -4,25 +4,20 @@ on:
   schedule:
     # Se ejecuta todos los días a las 12:00 UTC (9:00 AM Argentina)
     - cron: '0 12 * * *'
-  workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub si quieres
+  workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub
 
 jobs:
-  build:
+  publicar:
     runs-on: ubuntu-latest
 
     steps:
     - name: Descargar código
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Configurar Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-
-    - name: Instalar dependencias de sistema (Chrome para imágenes)
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
 
     - name: Instalar dependencias de Python
       run: |
@@ -34,6 +29,5 @@ jobs:
         IG_USERNAME: ${{ secrets.IG_USERNAME }}
         IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
         IG_SESSIONID: ${{ secrets.IG_SESSIONID }}
-        # Si tienes 2FA, puedes intentar pasarlo por secreto, 
-        # pero es mejor usar el SessionID para evitar bloqueos
+        IG_2FA_CODE: ${{ secrets.IG_2FA_CODE }}
       run: python bot.py
